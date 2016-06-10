@@ -8,23 +8,18 @@ module.exports = (function() {
         })
         .directive('masker', ['masker', function(masker) {
             return {
-                restrict: 'AE',
+                restrict: 'A',
                 require: 'ngModel',
-                scope: {
-                    'masker': '<',
-                    'separator': '<maskerSeparator',
-                    'helpText': '<'
-                },
                 compile: function() {
                     return {
                         post: function(scope, element, attrs, ngModel) {
-                            scope.$watch('masker', function(opts) {
+                            scope.$watch(attrs.masker, function(opts) {
                                 if(!angular.isDefined(opts)) {
                                     return;
                                 }
                                 var optsList,
-                                    splitter = scope.separator,
-                                    separator = angular.isString(scope.separator) ? scope.separator : '';
+                                    splitter = attrs.maskerSeparator,
+                                    separator = angular.isString(attrs.maskerSeparator) ? attrs.maskerSeparator : '';
                                 if(angular.isString(opts)) {
                                     optsList = [opts];
                                 }
@@ -70,9 +65,6 @@ module.exports = (function() {
                                         if(valid || !ngModel.$options || !ngModel.$options.allowInvalid) {
                                             ngModel.$setViewValue(cleaned.join(separator));
                                             ngModel.$render();
-                                        }
-                                        if(!valid) {
-                                            ngModel.helpText = 'help';
                                         }
                                     }
                                     return valid;
