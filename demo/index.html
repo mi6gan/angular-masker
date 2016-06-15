@@ -10,7 +10,13 @@
     <script type="text/javascript" src="../node_modules/angular-messages/angular-messages.js"></script>
     <script type="text/javascript" src="../dist/angular-masker.js"></script>
     <script>
-        angular.module('demo', ['ngMessages', 'masker']).controller('demoController', function($scope) {
+        angular.module('demo', ['ngMessages', 'masker'])
+        .config(function (MaskerProvider) {
+                angular.extend(MaskerProvider.patterns, {
+                    "N": /[A-za-zА-Яа-я]{1,20}/ 
+                });
+        })
+        .controller('demoController', function($scope) {
             $scope.models = {
                 phone: undefined,
                 fullName: undefined,
@@ -25,21 +31,19 @@
             <form name="form">
                 <fieldset>
                     <label for="phone">Phone number</label>
-                    <input type="text" name="phone" ng-model="models.phone" masker="'+9 (999) 999-9999'">
+                    <input type="text" name="phone" ng-model="models.phone" ng-trim="false" ng-model-options="{updateOn: 'change'}" masker="+7 (999) 999-9999">
                 </fieldset>
                 <fieldset>
                     <label for="fullName">Full name</label>
-                    <input type="text" name="fullName" ng-model="models.fullName" masker="['AAAAAAAAAA', 'AAAAAAAAAAA']"  masker-separator="space">
+                    <input type="text" name="fullName" ng-model="models.fullName" ng-trim="false" masker="N N">
                 </fieldset>
-                <fieldset>
-                    <label for="floatValue">Float value</label>
-                    <input type="text" name="floatValue" ng-model="models.floatValue" masker="['9999', '99']"  masker-separator=",">
-                </fieldset>
-            </form>
             <ng-repeat ng-repeat="(name, v) in models">
             <p ng-messages="form[name].$error" style="color:maroon" role="alert">
-                <span ng-message="mask"><ng-bind ng-bind="name"></ng-bind> input mask error</span>
+                <span ng-message="masker">Invalid <ng-bind ng-bind="name"></ng-bind>: <ng-bind ng-bind="v"></ng-bind></span>
             </p>
+            </ng-repeat>
+            </form>
+            {{ models.phone }}
         </ng-controller>
     </body>
 </html>

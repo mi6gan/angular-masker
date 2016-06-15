@@ -1,78 +1,63 @@
 module.exports = (function() {
     'use strict';
     angular.module('masker', [])
-        .provider('masker', function() {
-            this.$get = [function () {
-                return require('vanilla-masker');
-            }];
-        })
-        .directive('masker', ['masker', function(masker) {
+        .provider('Masker', function() {
             return {
-                restrict: 'A',
+                patterns: {
+                    "9": /\d/,
+                    "w": /[\w\W]/
+                },
+                $get: function () {
+                    return this;
+                }
+            };
+        })
+        .directive('masker', function($interpolate, Masker) {
+            return {
                 require: 'ngModel',
-                compile: function() {
+                restrict: 'A',
+                compile: function ($element, $attrs) {
                     return {
-                        post: function(scope, element, attrs, ngModel) {
-                            scope.$watch(attrs.masker, function(opts) {
-                                if(!angular.isDefined(opts)) {
-                                    return;
-                                }
-                                var optsList,
-                                    splitter = attrs.maskerSeparator,
-                                    separator = angular.isString(attrs.maskerSeparator) ? attrs.maskerSeparator : '';
-                                if(angular.isString(opts)) {
-                                    optsList = [opts];
-                                }
-                                else if(angular.isArray(opts)) {
-                                    optsList = opts;
-                                }
-                                else if(angular.isString(opts.pattern)) {
-                                    optsList = [opts.pattern];
-                                }
-                                else if(angular.isArray(opts.pattern)) {
-                                    optsList = opts.pattern;
-                                }
-                                optsList = optsList.map(function(pattern) {
-                                    return angular.merge({}, angular.isArray(opts) ? {} : opts, {
-                                        pattern: pattern
-                                    });
-                                });
-                                // set up validators
-                                ngModel.$parsers.push(function splitBySeparator(value) {
-                                    if(angular.isString(value) ) {
-                                        if( angular.equals(separator.toLowerCase(), 'space') ) {
-                                            separator = ' ';
-                                            splitter = /[\t\s]+/;
+                        post: function (scope, element, attrs, ngModel) {
+                            var patterns = $interpolate(attrs.masker)(scope).toString().split(""),
+                                modelOpts = ngModel.$options || {},
+                                valid = false;
+                            ngModel.$validators.masker = function () {
+                                return valid;
+                            };
+                            element.on('input', function () {
+                                var value = ( element.val() || ngModel.$viewValue || ngModel.$modelValue || ''),
+                                    maskedValue = '',
+                                    i = 0;
+                                for( i; i < patterns.length; ++i ) {
+                                    var pattern = patterns[i],
+                                        regexPattern = Masker.patterns[pattern];
+                                    if( angular.isObject(regexPattern) && ( regexPattern instanceof RegExp ) ) {
+                                        var match = value.match(regexPattern);
+                                        if( !match || match.index > 0 ) {
+                                            break;
                                         }
-                                        if(angular.isString(splitter) && splitter.length || angular.isObject(splitter)) {
-                                            return value.split(splitter);
-                                        }
-                                        else {
-                                            return [value];
-                                        }
+                                        maskedValue += match[0];
+                                        value = value.substring(match[0].length);
                                     }
-                                    return value;
-                                });
-                                ngModel.$validators.mask = function(modelValue, viewValue) {
-                                    var value = modelValue || viewValue,
-                                        valid = false;
-                                    if(angular.isArray(value)) {
-                                        var cleaned = [];
-                                        for(var i=0; i < Math.min(optsList.length, value.length); i++ ) { 
-                                            cleaned.push(masker.toPattern(value[i], optsList[i]));
+                                    else if(value.length) {
+                                        if( value.substring(0, pattern.length) == pattern ) {
+                                            value = value.substring(pattern.length);
                                         }
-                                        valid = (value.length <= optsList.length);
-                                        if(valid || !ngModel.$options || !ngModel.$options.allowInvalid) {
-                                            ngModel.$setViewValue(cleaned.join(separator));
-                                            ngModel.$render();
-                                        }
+                                        maskedValue += pattern;
                                     }
-                                    return valid;
-                                };
+                                }
+                                valid = (i == patterns.length); 
+                                element.val(maskedValue);
+                                if( ( modelOpts.updateOn  ) && valid || modelOpts.allowInvalid ) {
+                                    if( modelOpts.updateOn ) {
+                                        element.triggerHandler(modelOpts.updateOn);
+                                    }
+                                }
                             });
                         }
                     };
                 }
             };
-        }])
+        })
 })();

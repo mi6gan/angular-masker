@@ -23,7 +23,6 @@
     "grunt-contrib-uglify": "~1.0",
     "grunt-contrib-watch": "~1.0",
     "angular": "~1.5",
-    "angular-messages": "~1.5",
-    "vanilla-masker": "~1.0"
+    "angular-messages": "~1.5"
   }
 }
