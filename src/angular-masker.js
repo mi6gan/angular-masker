@@ -12,7 +12,7 @@ module.exports = (function() {
                 }
             };
         })
-        .directive('masker', function($interpolate, Masker) {
+        .directive('masker', function($interpolate, $timeout, Masker) {
             return {
                 require: 'ngModel',
                 restrict: 'A',
@@ -21,14 +21,20 @@ module.exports = (function() {
                         post: function (scope, element, attrs, ngModel) {
                             var patterns = $interpolate(attrs.masker)(scope).toString().split(""),
                                 modelOpts = ngModel.$options || {},
-                                valid = false;
+                                placeholder = attrs.placeholder,
+                                valid = true;
                             ngModel.$validators.masker = function () {
                                 return valid;
                             };
                             element.on('input', function () {
-                                var value = ( element.val() || ngModel.$viewValue || ngModel.$modelValue || ''),
+                                var value = element.val() || '',
                                     maskedValue = '',
-                                    i = 0;
+                                    i = 0,
+                                    charsAdded = 0,
+                                    charsAfter = value.length - this.selectionEnd;
+                                if(value.length < placeholder.length) {
+                                    value = placeholder;
+                                }
                                 for( i; i < patterns.length; ++i ) {
                                     var pattern = patterns[i],
                                         regexPattern = Masker.patterns[pattern];
@@ -44,11 +50,19 @@ module.exports = (function() {
                                         if( value.substring(0, pattern.length) == pattern ) {
                                             value = value.substring(pattern.length);
                                         }
+                                        else {
+                                            charsAdded ++;
+                                        }
                                         maskedValue += pattern;
                                     }
                                 }
                                 valid = (i == patterns.length); 
                                 element.val(maskedValue);
+                                if(charsAdded) {
+                                    $timeout(function() {
+                                        element[0].setSelectionRange(maskedValue.length - charsAfter, maskedValue.length - charsAfter);
+                                    }, 0);
+                                }
                                 if( ( modelOpts.updateOn  ) && valid || modelOpts.allowInvalid ) {
                                     if( modelOpts.updateOn ) {
                                         element.triggerHandler(modelOpts.updateOn);
