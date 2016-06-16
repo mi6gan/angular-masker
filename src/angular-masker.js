@@ -24,7 +24,7 @@ module.exports = (function() {
                                 placeholder = attrs.placeholder || '',
                                 valid = true;
                             ngModel.$validators.masker = function () {
-                                return valid;
+                                return ngModel.$error.required || valid;
                             };
                             element.on('input', function () {
                                 var value = element.val() || '',
