@@ -21,7 +21,7 @@ module.exports = (function() {
                         post: function (scope, element, attrs, ngModel) {
                             var patterns = $interpolate(attrs.masker)(scope).toString().split(""),
                                 modelOpts = ngModel.$options || {},
-                                placeholder = attrs.placeholder || '',
+                                placeholder = attrs.includePlaceholder ? ( attrs.placeholder || '' ) : '',
                                 valid = true;
                             ngModel.$validators.masker = function () {
                                 return ngModel.$error.required || valid;
