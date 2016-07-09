@@ -22,24 +22,17 @@ module.exports = (function() {
                         if(!attrs.mask || !ngModel || element[0].tagName.toLowerCase() != 'input' || attrs.type.toLowerCase() != 'text') {
                             return;
                         }
-                        if(!ngModel.$options) {
-                            ngModel.$options = {};
-                        }
                         var patterns = $interpolate(attrs.mask)(scope),
                             patterns = angular.isDefined(patterns) ? patterns.toString().split("") : '',
-                            modelOpts = ngModel.$options || {},
-                            placeholder = attrs.includePlaceholder ? ( attrs.placeholder || '' ) : '',
-                            cursorPos = placeholder.length,
-                            valid = true;
+                            placeholder = attrs.includePlaceholder ? ( attrs.placeholder || '' ) : '';
                         if(!patterns) {
                             return;
                         }
-                        element.on('input', function($event) {
+                        ngModel.$validators.masker = function () {
                             var value = ngModel.$isEmpty(ngModel.$viewValue) ? '' : ngModel.$viewValue,
+                                valid = true,
                                 maskedValue = '',
-                                i = 0,
-                                charsAdded = 0,
-                                charsAfter = value.length - element[0].selectionEnd;
+                                i = 0;
                             if(value.length < placeholder.length) {
                                 value = placeholder;
                             }
@@ -58,51 +51,15 @@ module.exports = (function() {
                                     if( value.substring(0, pattern.length) == pattern ) {
                                         value = value.substring(pattern.length);
                                     }
-                                    else {
-                                        charsAdded ++;
-                                    }
                                     maskedValue += pattern;
                                 }
                             }
                             valid = (i == patterns.length); 
-                            cursorPos = Math.max(element[0].selectionStart + charsAdded, placeholder.length);
-                            ngModel.$setViewValue(maskedValue, $event);
-                            ngModel.$render();
-                            if(ngModel.$dirty || valid) {
-                                ngModel.$commitViewValue();
+                            if(value != maskedValue) {
+                                ngModel.$setViewValue(maskedValue);
+                                ngModel.$render();
                             }
-                        });
-                        element.on('blur', function () {
-                            ngModel.$commitViewValue();
-                        });
-                        element.on('change', function () {
-                            ngModel.$commitViewValue();
-                        });
-                        ngModel.$render = function () {
-                            var value = ngModel.$isEmpty(ngModel.$viewValue) ? '' : ngModel.$viewValue;
-                            if(element.val() !== value) {
-                                element.val(value);
-                                element[0].selectionStart = cursorPos;
-                                element[0].selectionEnd = cursorPos;
-                            }
-                        };
-                        var validate = function (resolve, reject) {
-                            if(!valid) {
-                                reject();
-                            }
-                            else {
-                                resolve();
-                            }
-                        };
-                        ngModel.$asyncValidators.masker = function(modelValue, viewValue) {
-                            if(modelValue == viewValue) {
-                                return $q(validate);
-                            }
-                            else {
-                                return $q(function(resolve, reject) {
-                                   element.one('blur', angular.bind(this, validate, resolve, reject));
-                                });
-                            }
+                            return valid;
                         };
                     }
                 }
